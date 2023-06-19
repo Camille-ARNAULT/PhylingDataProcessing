@@ -25,6 +25,7 @@ All .py starting with *Functions* are small modules containing the functions req
 ### 1 - PhylingDecoderExtractor
 This is the first code you need to execute if you have a .txt file coming from Phyling sensors. You only have to precise path and name of your .txt file (without extension).
 After decoding and ready the data, code will extract them in a .csv file. Pay attention to Console messages. It will inform you if some data are missing compared with all the data that can theoretically be extracted.
+
 *Notes : to execute it, you need the Phyling Decoder key.*
 
 ### 2 - Calculation
