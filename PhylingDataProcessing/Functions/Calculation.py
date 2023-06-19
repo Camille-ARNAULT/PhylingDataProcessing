@@ -1,23 +1,12 @@
-# -*- coding: utf-8 -*-
 """
-Created on Wed Jun  7 12:11:03 2023
-
-@author: admin
+@author: arnaultcamille@univ-poitiers.fr
 """
 
-#Personalized Libraries
+from FunctionsCalculation import * #DecoupageZonesActives,CalculVitesseTopTourArriere,Resynchro,ImuOrientation
+from sklearn.linear_model import LinearRegression
+from datetime import datetime
 
-def DataHarmonization(DecodedFile,NbZones=1,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,FreqAcq=200,OffsetCalibrationFG=-2750,OffsetCalibrationFD=-3540,SeuilTopTour=2015,IntensitePos=20,IntensiteNeg=23,EspacementAimant=90):
-    
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    from colorama import Fore
-    from scipy.signal import find_peaks
-    from sklearn.linear_model import LinearRegression
-    from datetime import datetime
-    from ImuOrientation import ImuOrientation
-    from StandardFunctions import Resynchro,NumberOfNonNans,DecoupageZonesActives,IndexNearestValue,InterpolationResample,FiltrageButterworth,IntegrationTrapeze,CalculVitesseTopTourArriere
+def Calculation(DecodedFile,NbZones=1,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,FreqAcq=200,OffsetCalibrationFG=-2750,OffsetCalibrationFD=-3540,SeuilTopTour=2015,IntensitePos=20,IntensiteNeg=23,EspacementAimant=90):
     
     print("----------> READING DATA...")
     

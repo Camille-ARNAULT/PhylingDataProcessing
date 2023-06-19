@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
 """
-Created on Wed Jun  7 11:16:29 2023
-
-@author: admin
+@author: arnaultcamille@univ-poitiers.fr
 """
 
-
-
+from FunctionBasics import *
+import imufusion
 
 def ImuOrientation(Temps,Data,Verification='Oui'):
     
@@ -27,12 +24,6 @@ def ImuOrientation(Temps,Data,Verification='Oui'):
     :type Verification: str
  
     """
-    import imufusion
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    from StandardFunctions import DetectionFrontMontant, FiltrageButterworth
-    from colorama import Fore
     
     #----------------------------------------------------------- Calcul Offset Gyro
         

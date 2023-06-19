@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
-Created on Wed Jun  7 09:23:37 2023
+@author: arnaultcamille@univ-poitiers.fr
+"""
 
-@author: admin
-"""
+import pandas as pd
+from decoder import decoder
 
 def PhylingDecoder(Path, RawFileName):
     
@@ -20,11 +20,6 @@ def PhylingDecoder(Path, RawFileName):
     :param OutputFileName: name of output file with .csv extention
     :type OutputFileName: str
     """
-    
-    
-    #Import all libraries needed
-    import pandas as pd
-    from decoder import decoder
     
     
     #Decoding raw data

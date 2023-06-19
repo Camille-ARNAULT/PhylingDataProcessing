@@ -5,9 +5,10 @@ Created on Thu Jun  8 08:52:46 2023
 @author: admin
 """
 
-from StandardFunctions import *
+from FunctionsBasics import *
+from FunctionsAreaAnalysis import *
 
-def DataVisualizationStart(Data):
+def Start(Data):
         
     #Start Detection
     print('Start Analsysis...')
@@ -50,13 +51,10 @@ def DataVisualizationStart(Data):
     FrameReculMax = np.argmin(Data['CadenceTrMin'][FrameInit:FrameInit+100])
     AngleManivelleReculMax = Data['PositionManivelleGauche'][FrameReculMax]
     AngleTotalRecul = Data['PositionManivelleGauche'][FrameReculMax]-Data['PositionManivelleGauche'][0]
-    
-    
          
-    return FrameInit, FrameEnd, IndexCP, ImpulsionDCP, TravailDCP, AngleManivelleReculMax, AngleTotalRecul
-       
+    return FrameInit, FrameEnd, IndexCP, ImpulsionDCP, TravailDCP, AngleManivelleReculMax, AngleTotalRecul   
 
-def DataVisualizationEndOfDeparture(Data,FrameInit):
+def EndMound(Data,FrameInit):
     # Trouver le temps en bas de butte
     plt.figure()
     plt.plot(Data['ForceTotaleAbsolue'][FrameInit:FrameInit+800])
@@ -75,7 +73,7 @@ def DataVisualizationEndOfDeparture(Data,FrameInit):
     
     return TempsBasButte
 
-def DataVisualizationFirstJump(Data,FrameInit):
+def FirstJump(Data,FrameInit):
     
     plt.figure()
     plt.plot(Data['ForceTotaleAbsolue'][FrameInit:FrameInit+800],label='Force Totale Absolue (N)')  
