@@ -27,26 +27,8 @@ PhylingDecoder(Path,RawFileName=RawFileName)
 CirconferenceRoue = 1591.67
 Braquet = 50/18
 LongueurManivelle = 177.5
-
-# Analysis Parameters :
 AngleCadre = 6
-OffsetCalibrationFG = -2441
-OffsetCalibrationFD = -3961
-SeuilTopTour = 1.633
-IntensitePos = 0.015
-IntensiteNeg = 0.02
 EspacementAimant = 90
-
-"""    
--> How to define OffsetCalibration ?
-    Open .txt file and go to <== calibration ==>.
-    get "offset" Force1 => OffsetCalibrationFD
-    get "offset" Force2 => OffsetCalibrationFG
-    
--> How to get SeuilTopTour, IntensitePos & IntensiteNeg ?
-    raw = pd.read_csv(Path+RawFileName+'.csv')
-    plt.plot(raw['magneto_toptour'])
-"""
     
 #------------------------------------------------------------------------------
 
@@ -54,9 +36,7 @@ EspacementAimant = 90
 from Calculation import Calculation
 NbZones = Calculation(Path+RawFileName+'.csv',
                       CirconferenceRoue=CirconferenceRoue,Braquet=Braquet,LongueurManivelle=LongueurManivelle,AngleCadre=AngleCadre,
-                      FreqAcq=200,
-                      OffsetCalibrationFG=OffsetCalibrationFG,OffsetCalibrationFD=OffsetCalibrationFD,
-                      SeuilTopTour=SeuilTopTour,IntensitePos=IntensitePos,IntensiteNeg=IntensiteNeg,EspacementAimant=EspacementAimant)
+                      EspacementAimant=EspacementAimant)
 
 #%% START DATA EXTRACTION
 

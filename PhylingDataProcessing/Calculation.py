@@ -6,7 +6,7 @@ from FunctionsCalculation import * #DecoupageZonesActives,CalculVitesseTopTourAr
 from sklearn.linear_model import LinearRegression
 from datetime import datetime
 
-def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,FreqAcq=200,OffsetCalibrationFG=-2750,OffsetCalibrationFD=-3540,SeuilTopTour=2015,IntensitePos=20,IntensiteNeg=23,EspacementAimant=90):
+def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,FreqAcq=200,EspacementAimant=90):
     
     print("----------> READING DATA...")
     
@@ -81,6 +81,9 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
         
         #%%
         print("Resample Data...")
+        
+        #Specify Frequency we want to use for resample
+        FreqAcq = 200
         
         #Extract data sensors with limits defined before (needs to be rounded because of the ginput) 
         #Pedalier
@@ -191,12 +194,9 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
         print("Pedalier data calculation...")
 
         try:
-            #Application Offset for forces
-            OffsetForceGauche = OffsetCalibrationFG/(100) 
-            OffsetForceDroite = OffsetCalibrationFD/(-100) 
             #Butterworth filter of 20Hz cut off
-            ForceGaucheFiltree = FiltrageButterworth((locals()[ZoneList[zone]]['RawData']['force_g']+OffsetForceGauche),FreqAcq,20)
-            ForceDroiteFiltree = FiltrageButterworth((locals()[ZoneList[zone]]['RawData']['force_d']+OffsetForceDroite),FreqAcq,20)
+            ForceGaucheFiltree = FiltrageButterworth(locals()[ZoneList[zone]]['RawData']['force_g'],FreqAcq,20)
+            ForceDroiteFiltree = FiltrageButterworth(locals()[ZoneList[zone]]['RawData']['force_d'],FreqAcq,20)
             GyroPedalierFiltre = FiltrageButterworth(locals()[ZoneList[zone]]['RawData']['gyro_pedalier'],FreqAcq,20)
             print("- Pedalier data filtered.")
         except:
@@ -271,6 +271,10 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
         try :
             # Filtering
             DataMagnetoFiltrees = FiltrageButterworth(DataTopTourCrop['magneto_toptour'],800,50)
+            SeuilTopTour = np.mean(DataMagnetoFiltrees[0:5000])
+            IntensitePos = (np.max(DataMagnetoFiltrees[0:5000])-np.mean(DataMagnetoFiltrees[0:5000]))*6
+            IntensiteNeg = (np.mean(DataMagnetoFiltrees[0:5000])-np.min(DataMagnetoFiltrees[0:5000]))*6
+            
             # Magnetic peaks detection & Velocity calculation
             XVitesseTopTour, XDistanceTopTour, VitesseTopTour, DistanceTopTourM, PeaksNeg, PeaksPos = CalculVitesseTopTourArriere(DataTopTourCrop['temps_toptour'],DataMagnetoFiltrees,IntensitePos,IntensiteNeg,EspacementAimant,SeuilTopTour,CirconferenceRoue)
             # Verification of Magnetic peaks detection
