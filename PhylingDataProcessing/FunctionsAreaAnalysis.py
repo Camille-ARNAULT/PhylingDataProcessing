@@ -93,7 +93,7 @@ def FindZonesPedalees(Data,IntRecherche,FrameInit,FrameEnd):
     plt.xlabel('frame')
     plt.ylabel('Cadence (Tr/min)')
     plt.title('Cliquez sur les minimums de cadence délimitant les zones de pédalage.')
-    FrameUserPedalage = plt.ginput(n=-1,timeout=30,show_clicks=True)
+    FrameUserPedalage = plt.ginput(n=-1,timeout=30,show_clicks=True);
     
     # Récupération de la longueur des données totales
     FrameReellePedalage = [0 for i in range(len(FrameUserPedalage))]

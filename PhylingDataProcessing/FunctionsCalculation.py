@@ -5,6 +5,16 @@
 from FunctionsBasics import *
 import imufusion
 
+def DetectionNbZones(Data):
+    #Moyenne glissante
+    Pics,_ = find_peaks(Data,height=(800), prominence=500, distance = 20000)
+    NbZones = len(Pics)
+    # plt.figure()
+    # plt.plot(Data)
+    # plt.plot(Pics,Data[Pics],'x')
+    print("NbZones = " + str(NbZones))
+    return NbZones,Pics
+
 def DecoupageZonesActives(Data,NbZones):
     """
     - Description -

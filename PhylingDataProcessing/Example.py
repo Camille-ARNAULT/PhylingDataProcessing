@@ -2,6 +2,13 @@
 @author: arnaultcamille@univ-poitiers.fr
 """
 
+#%% INITIALIZATION
+import os
+os.getcwd()
+CurrentPath = os.path.dirname(__file__)
+os.chdir(CurrentPath)
+
+
 #%% RAW DATA EWTRACTION
 
 # User input :
@@ -17,7 +24,6 @@ PhylingDecoder(Path,RawFileName=RawFileName)
 #%% GLOBAL DATA CALCULATION
 
 # User input :
-NbZones = 5 
 CirconferenceRoue = 1591.67
 Braquet = 50/18
 LongueurManivelle = 177.5
@@ -31,11 +37,7 @@ IntensitePos = 0.015
 IntensiteNeg = 0.02
 EspacementAimant = 90
 
-"""
--> How to get NbZones ?
-    raw = pd.read_csv(Path+RawFileName+'.csv')
-    plt.plot(raw['gyro_pedalier']) 
-    
+"""    
 -> How to define OffsetCalibration ?
     Open .txt file and go to <== calibration ==>.
     get "offset" Force1 => OffsetCalibrationFD
@@ -50,11 +52,11 @@ EspacementAimant = 90
 
 # Code :
 from Calculation import Calculation
-Calculation(Path+RawFileName+'.csv',NbZones=NbZones,
-                  CirconferenceRoue=CirconferenceRoue,Braquet=Braquet,LongueurManivelle=LongueurManivelle,AngleCadre=AngleCadre,
-                  FreqAcq=200,
-                  OffsetCalibrationFG=OffsetCalibrationFG,OffsetCalibrationFD=OffsetCalibrationFD,
-                  SeuilTopTour=SeuilTopTour,IntensitePos=IntensitePos,IntensiteNeg=IntensiteNeg,EspacementAimant=EspacementAimant)
+NbZones = Calculation(Path+RawFileName+'.csv',
+                      CirconferenceRoue=CirconferenceRoue,Braquet=Braquet,LongueurManivelle=LongueurManivelle,AngleCadre=AngleCadre,
+                      FreqAcq=200,
+                      OffsetCalibrationFG=OffsetCalibrationFG,OffsetCalibrationFD=OffsetCalibrationFD,
+                      SeuilTopTour=SeuilTopTour,IntensitePos=IntensitePos,IntensiteNeg=IntensiteNeg,EspacementAimant=EspacementAimant)
 
 #%% START DATA EXTRACTION
 
@@ -75,7 +77,7 @@ for i in range(0,NbZones) :
 
 for zone in range(0,NbZones):
     print('----------')
-    print('Area '+str(zone))
+    print('Area '+str(zone+1))
     print('----------')
     #Data importation
     Data = pd.read_csv(Path+ZoneList[zone])
@@ -94,7 +96,7 @@ for zone in range(0,NbZones):
         locals()["Zone"+str(zone+1)]['TravailDCP'] = TravailDCP
         locals()["Zone"+str(zone+1)]['AngleManivelleReculMax'] = AngleManivelleReculMax
         locals()["Zone"+str(zone+1)]['AngleTotalRecul'] = AngleTotalRecul
-        del AngleManivelleReculMax, AngleTotalRecul,FrameInit,FrameEnd,ImpulsionDCP,IndexCP,TravailDCP
+        del AngleManivelleReculMax, AngleTotalRecul,FrameEnd,ImpulsionDCP,IndexCP,TravailDCP
     
     # End mound time calculation
     if EndMoundAnalysis in ["YES","Yes","yes","Y","y","OUI","Oui","oui","O","o"]:

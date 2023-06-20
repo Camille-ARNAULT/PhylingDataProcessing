@@ -6,16 +6,18 @@ from FunctionsCalculation import * #DecoupageZonesActives,CalculVitesseTopTourAr
 from sklearn.linear_model import LinearRegression
 from datetime import datetime
 
-def Calculation(DecodedFile,NbZones=1,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,FreqAcq=200,OffsetCalibrationFG=-2750,OffsetCalibrationFD=-3540,SeuilTopTour=2015,IntensitePos=20,IntensiteNeg=23,EspacementAimant=90):
+def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,FreqAcq=200,OffsetCalibrationFG=-2750,OffsetCalibrationFD=-3540,SeuilTopTour=2015,IntensitePos=20,IntensiteNeg=23,EspacementAimant=90):
     
     print("----------> READING DATA...")
     
     # Get decoded data
     Raw = pd.read_csv(DecodedFile)
     print("Reading OK")
+    
     # MiniPhyling-MaxiPhyling resynchronization
     Raw["temps_pedalier"] = Resynchro(Raw["temps_pedalier"],Verification="No")
     print("Resynchronisation OK")
+    
     # Extract data for each sensor
     try :        
         DataPedalier = Raw[["temps_pedalier","gyro_pedalier","force_d","force_g","magneto_pedalier"]]
@@ -43,9 +45,27 @@ def Calculation(DecodedFile,NbZones=1,CirconferenceRoue=1591.67,Braquet=44/16,Lo
 
     print("----------> DELIMITATION OF WORKING SPACE...")
     
+    #Detection NbZones
+    NbZones,ApproximativeCenterZone = DetectionNbZones(Raw['gyro_pedalier'])
+    
     #Cutting before and after each work area
-    FramesLimite = DecoupageZonesActives(Raw['gyro_pedalier'],NbZones)
-    FramesLimite[FramesLimite < 0] = 20
+    FramesLimite=np.zeros((NbZones,2))
+    for i in range(0,NbZones):
+        FramesLimite[i,0]=ApproximativeCenterZone[i]-2000
+        FramesLimite[i,1]=ApproximativeCenterZone[i]+7000
+    FramesLimite[FramesLimite < 0] = 0
+    FrameMax = NumberOfNonNans(Raw['gyro_pedalier'])
+    FramesLimite[FramesLimite > FrameMax] = FrameMax  
+    del FrameMax     
+    
+    #Activate it in case of bad zones detection
+    # UserInput :
+    # NbZones = 1 
+    # Code :
+    # FramesLimite = DecoupageZonesActives(Raw['gyro_pedalier'],NbZones)
+    # FramesLimite[FramesLimite < 0] = 20
+    
+    
     #Create var for each area
     ZoneList=[0 for i in range(NbZones)]
     for zone in range(1,NbZones+1):
@@ -369,7 +389,7 @@ def Calculation(DecodedFile,NbZones=1,CirconferenceRoue=1591.67,Braquet=44/16,Lo
                                 print ('Missing 2 or more sensors : csv writing failed. ')
         
             
-            
+    return NbZones            
             
             
             
