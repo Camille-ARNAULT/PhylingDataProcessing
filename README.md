@@ -49,13 +49,16 @@ For each of them, User Input are specified allowing you tu use functions without
 
 ## Goals
 
-### Automation
-We would like to develop automatic or semi-automatic method to find magnetic threshold of the revolution counter and detect how many areas there is in a record.
-
 ### Area Analysis
-We would like to find other recurrent and detectable patterns on our data.
+- find other recurrent and detectable patterns on our data (Pitch/roll/Yaw has still not been investigated)
 
 ### Bug correction
-We would like to improve the estimation of the crank angle.
+- Correction of the estimation of the crank angle
+
+### Easy to use
+- Improvement graphic description (title,legend,labels)
+- Description for user input
+- Help for all function
+
 
 
