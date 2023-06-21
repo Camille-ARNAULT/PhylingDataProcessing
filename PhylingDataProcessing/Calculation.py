@@ -6,7 +6,7 @@ from FunctionsCalculation import * #DecoupageZonesActives,CalculVitesseTopTourAr
 from sklearn.linear_model import LinearRegression
 from datetime import datetime
 
-def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,EspacementAimant=90):
+def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,EspacementAimant=90,VerificationResynchro="No",VerificationCrankPeaks='No',VerificationRevolutionCounterPeaks='No',VerificationRevolutionCounterSpeed='No',VerificationImuOrientation = "No"):
     
     print("----------> READING DATA...")
     
@@ -15,7 +15,7 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
     print("Reading OK")
     
     # MiniPhyling-MaxiPhyling resynchronization
-    Raw["temps_pedalier"] = Resynchro(Raw["temps_pedalier"],Verification="No")
+    Raw["temps_pedalier"] = Resynchro(Raw["temps_pedalier"],VerificationResynchro=VerificationResynchro)
     print("Resynchronisation OK")
     
     # Extract data for each sensor
@@ -46,17 +46,7 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
     print("----------> DELIMITATION OF WORKING SPACE...")
     
     #Detection NbZones
-    NbZones,ApproximativeCenterZone = DetectionNbZones(Raw['gyro_pedalier'])
-    
-    #Cutting before and after each work area
-    FramesLimite=np.zeros((NbZones,2))
-    for i in range(0,NbZones):
-        FramesLimite[i,0]=ApproximativeCenterZone[i]-2000
-        FramesLimite[i,1]=ApproximativeCenterZone[i]+7000
-    FramesLimite[FramesLimite < 0] = 0
-    FrameMax = NumberOfNonNans(Raw['gyro_pedalier'])
-    FramesLimite[FramesLimite > FrameMax] = FrameMax  
-    del FrameMax     
+    NbZones,FramesLimite = DetectionNbZones(Raw['gyro_pedalier'])    
     
     #Activate it in case of bad zones detection
     # UserInput :
@@ -75,9 +65,9 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
     print("----------> CALCULATION FOR EACH AREA...")
     
     for zone in range(0,NbZones):
-        print("--------")
+        print("==========")
         print("AREA "+str(zone+1))
-        print("--------")
+        print("==========")
         
         #%%
         print("Resample Data...")
@@ -118,7 +108,7 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
             else :
                 DataTopTourCrop = DataTopTour[list(DataTopTour)][IndexInitTT-5:IndexEndTT+5]
         except :
-            print('ERROR : Top tour resample prep failed.')
+            print('ERROR : Revolution counter resample prep failed.')
         #Create new time base according to MinPhyling Time (longer than MaxiPhyling Time)
         try : 
             #Get time limits
@@ -136,9 +126,9 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
             force_g_resample=InterpolationResample(DataPedalierCrop['temps_pedalier'],x,DataPedalierCrop['force_g'])
             force_d_resample=InterpolationResample(DataPedalierCrop['temps_pedalier'],x,DataPedalierCrop['force_d'])
             magneto_resample=InterpolationResample(DataPedalierCrop['temps_pedalier'],x,DataPedalierCrop['magneto_pedalier']) #MAGNETO POUR LES ANCIENS ESSAIS
-            print("- Pedalier data resample.")
+            print("- Crankset data resample.")
         except :
-            print(Fore.RED + "ERROR : Pedalier data resample failed.")
+            print(Fore.RED + "ERROR : Crankset data resample failed.")
         
         #Resample IMU Data according to the new base time with CubicSpline    
         try : 
@@ -178,9 +168,9 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
             locals()[ZoneList[zone]]['RawData'] = {}
             locals()[ZoneList[zone]]['RawData'] = pd.DataFrame(data = {'time':x,'gyro_pedalier':gyro_pedalier_resample,'force_g':force_g_resample,'force_d':force_d_resample,'magneto':magneto_resample,'acc_x':acc_x_resample,'acc_y':acc_y_resample,'acc_z':acc_z_resample,'gyro_x':gyro_x_resample,'gyro_y':gyro_y_resample,'gyro_z':gyro_z_resample})
             del gyro_pedalier_resample, force_g_resample, force_d_resample, magneto_resample, acc_x_resample, acc_y_resample, acc_z_resample, gyro_x_resample, gyro_y_resample, gyro_z_resample
-            print("- Resampled Pedalier data stored.")
+            print("- Resampled crankset data stored.")
         except :
-            print(Fore.RED + "ERROR : Pedalier resampled data could not be stored.")
+            print(Fore.RED + "ERROR : Crankset resampled data could not be stored.")
             
         #Data GPS Storage in DataFrame
         try :
@@ -191,16 +181,17 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
             print(Fore.RED + "ERROR : GPS resampled data could not be stored.")
             
         #%%    
-        print("Pedalier data calculation...")
+        print("-----------------------------")
+        print("Crankset data calculation...")
 
         try:
             #Butterworth filter of 20Hz cut off
             ForceGaucheFiltree = FiltrageButterworth(locals()[ZoneList[zone]]['RawData']['force_g'],FreqAcq,20)
             ForceDroiteFiltree = FiltrageButterworth(locals()[ZoneList[zone]]['RawData']['force_d'],FreqAcq,20)
             GyroPedalierFiltre = FiltrageButterworth(locals()[ZoneList[zone]]['RawData']['gyro_pedalier'],FreqAcq,20)
-            print("- Pedalier data filtered.")
+            print("- Crankset data filtered.")
         except:
-            print(Fore.RED + "ERROR : Pedalier data could not be filtered.")
+            print(Fore.RED + "ERROR : Crankset data could not be filtered.")
             
         try :
             # Calculer la cadence, la vitesse et la distance
@@ -226,7 +217,7 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
             Travail = IntegrationTrapeze(PuissanceTotale,FreqAcq)
             print("- Forces calculation successful.")
         except : 
-            print(Fore.RED + "PEDALIER : ERREUR SUR LES CALCULS LIES AUX FORCES.")
+            print(Fore.RED + "ERROR : Forces could not be calculated.")
             
         #Angular displacement calculation
         try :
@@ -238,28 +229,15 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
         try :
             DataMagnetoPedalierFiltrees = FiltrageButterworth(DataPedalierCrop['magneto_pedalier'],200,50)
             MagnetoPeaks,_ = find_peaks(DataMagnetoPedalierFiltrees,height=(10000,None),prominence=(500,None)) 
-            #Verification
-            plt.figure()
-            plt.plot(MagnetoPeaks,DataMagnetoPedalierFiltrees[MagnetoPeaks],'x')
-            plt.plot(DataMagnetoPedalierFiltrees)            
-            print("- Pedalier magnetic peaks detected.")
+            if VerificationCrankPeaks in ['Oui','oui','OUI','o','O','YES','Yes','yes','Y','y'] :
+                plt.figure()
+                plt.plot(MagnetoPeaks,DataMagnetoPedalierFiltrees[MagnetoPeaks],'x')
+                plt.plot(DataMagnetoPedalierFiltrees)            
+            print("- Crank magnetic peaks detected.")
         except :
-            print(Fore.RED + "ERROR : Pedalier magnetic peaks could not be detected.")
-        #METHODE 1, WITHOUT READJUSTMENT - Displacement sum in BMX landmark
-        # try :
-        #     SommeDeplacementAngulairePedalier = np.cumsum(DeplacementAngulairePedalier)
-        #     FirstPeak = MagnetoPeaks[0]
-        #     PositionReelleFirstPeak = 270-AngleCadre
-        #     Correction = PositionReelleFirstPeak-SommeDeplacementAngulairePedalier[FirstPeak]
-        #     PositionPedalierGauche = SommeDeplacementAngulairePedalier+Correction
-        #     PositionPedalierGauche = PositionPedalierGauche%360 
-        #     print("- Total displacement in BMX landmark successfully calculated.")
-        # except :
-        #     print(Fore.RED + "ERROR : Total displacement could not be calculated.")
-        
-        #METHODE 2, WITH MAGNETIC READJUSTMENT - Displacement sum in BMX landmark 
-        try :
-            
+            print(Fore.RED + "ERROR : Crank magnetic peaks could not be detected.")
+
+        try : 
             #Angular correction
             AngleReel = 270-AngleCadre
             SommeDeplacementAngulairePedalier = np.cumsum(DeplacementAngulairePedalier)
@@ -294,7 +272,7 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
                     AngleManivelleGauche[j]=SommeDeplacementAngulairePedalierCorrige[j]%360
                     AngleManivelleDroite[j]=(SommeDeplacementAngulairePedalierCorrige[j]-180)%360
         except :
-            print(Fore.RED + "ERROR : Total displacement could not be calculated.")
+            print(Fore.RED + "ERROR : Total crank displacement could not be calculated.")
         #Data Storage in Dataframe
         try :
             locals()[ZoneList[zone]]['DataPedalier'] = {}
@@ -305,27 +283,26 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
                                                                             'PuissanceGauche':PuissanceGauche,'PuissanceDroite':PuissanceDroite,'PuissanceTotale':PuissanceTotale,
                                                                             'ImpulsionGauche':ImpulsionGauche.flatten(),'ImpulsionDroite':ImpulsionDroite.flatten(),'ImpulsionTotale':Impulsion.flatten(),
                                                                             'TravailGauche':TravailGauche.flatten(),'TravailDroite':TravailDroite.flatten(),'TravailTotal':Travail.flatten()})
-            print("- Pedalier calculated data stored.")
+            print("- Crankset calculated data stored.")
         except :
-            print(Fore.RED + "ERROR : Pedalier calculated data could not be stored.")
+            print(Fore.RED + "ERROR : Crankset calculated data could not be stored.")
 
         #%%
-        print("Top tour data calculation...")
+        print("--------------------------------------")
+        print("Revolution counter data calculation...")
         try :
             # Filtering
             DataMagnetoFiltrees = FiltrageButterworth(DataTopTourCrop['magneto_toptour'],800,50)
-            SeuilTopTour = np.mean(DataMagnetoFiltrees[0:5000])
-            IntensitePos = (np.max(DataMagnetoFiltrees[0:5000])-np.mean(DataMagnetoFiltrees[0:5000]))*6
-            IntensiteNeg = (np.mean(DataMagnetoFiltrees[0:5000])-np.min(DataMagnetoFiltrees[0:5000]))*6
             
             # Magnetic peaks detection & Velocity calculation
-            XVitesseTopTour, XDistanceTopTour, VitesseTopTour, DistanceTopTourM, PeaksNeg, PeaksPos = CalculVitesseTopTourArriere(DataTopTourCrop['temps_toptour'],DataMagnetoFiltrees,IntensitePos,IntensiteNeg,EspacementAimant,SeuilTopTour,CirconferenceRoue)
+            XVitesseTopTour, XDistanceTopTour, VitesseTopTour, DistanceTopTourM, PeaksNeg, PeaksPos = CalculVitesseTopTourArriere(DataTopTourCrop['temps_toptour'],DataMagnetoFiltrees,EspacementAimant,CirconferenceRoue)
             # Verification of Magnetic peaks detection
-            plt.figure()
-            plt.plot(DataMagnetoFiltrees)
-            plt.plot(PeaksPos,DataMagnetoFiltrees[PeaksPos],'x')
-            plt.plot(PeaksNeg,DataMagnetoFiltrees[PeaksNeg],'x')
-            plt.grid()
+            if VerificationRevolutionCounterPeaks in ['Oui','oui','OUI','o','O','YES','Yes','yes','Y','y'] :
+                plt.figure()
+                plt.plot(DataMagnetoFiltrees)
+                plt.plot(PeaksPos,DataMagnetoFiltrees[PeaksPos],'x')
+                plt.plot(PeaksNeg,DataMagnetoFiltrees[PeaksNeg],'x')
+                plt.grid()
             
             #Top Tour Velocity Resample
             # Create time data before first velocity calculated (because of the spacement between magnet, velocity is not calculated at specific frequency as other mesurement could.)          
@@ -348,46 +325,49 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
             NewVitesseTopTour = pd.concat([IntervalleZeros1, pd.Series(VitesseTopTour),IntervalleZeros2], ignore_index=True)
             NewDistanceTopTour = pd.concat([IntervalleZeros1, pd.Series(DistanceTopTourM),IntervalleDistance2], ignore_index=True)
         except :
-            print('ERROR : Top tour resize prep failed.')
+            print('ERROR : Revolution counter resize prep failed.')
         # Linear interpolation between each point
         try : 
             vitesse_toptour_resample=np.interp(x,NewTempsTopTour,NewVitesseTopTour) 
             distance_toptour_resample=np.interp(x,NewTempsTopTour,NewDistanceTopTour) 
-            print("- Top tour data resampled.")
+            print("- Revolution counter data resampled.")
         except :
-            print(Fore.RED + "ERROR : Top tour data could not be resample.")
+            print(Fore.RED + "ERROR : Revolution counter data could not be resample.")
             
         try :    
             #Filtring
             vitesse_toptour_resample = FiltrageButterworth(vitesse_toptour_resample,FreqAcq,20)
             # Comparison between TopTour & Pedalier Velocity
-            plt.figure()
-            plt.title('Comparaison vitesse Top Tour/Pédalier : Zone '+str(zone+1))
-            plt.plot(x,VitessePedalier)
-            plt.plot(NewTempsTopTour,NewVitesseTopTour)
-            plt.plot(x,vitesse_toptour_resample) 
-            plt.grid()
-            plt.legend(['VitessePedalier','Vitesse Top Tour Initiale','Vitesse Top Tour Interpolée'])
+            if VerificationRevolutionCounterSpeed in ['Oui','oui','OUI','o','O','YES','Yes','yes','Y','y'] :
+                plt.figure()
+                plt.title('Comparaison vitesse Top Tour/Pédalier : Zone '+str(zone+1))
+                plt.plot(x,VitessePedalier)
+                plt.plot(NewTempsTopTour,NewVitesseTopTour)
+                plt.plot(x,vitesse_toptour_resample) 
+                plt.grid()
+                plt.legend(['VitessePedalier','Vitesse Top Tour Initiale','Vitesse Top Tour Interpolée'])
         except :
-            print('ERROR : Top tour resample prep failed.')
+            print('ERROR : Revolution counter resample prep failed.')
         #DataStorage in DataFrame
         try :
             locals()[ZoneList[zone]]['DataTopTour'] = {}
             locals()[ZoneList[zone]]['DataTopTour'] = pd.DataFrame(data = {'VitesseTopTour':vitesse_toptour_resample,'DistanceTopTour':distance_toptour_resample})
-            print("GENERAL : Sauvegarde des DataTopTour "+ ZoneList[zone] + " OK")
+            print("- Revolution counter calculated data stored.")
         except :
-            print(Fore.RED + "GENERAL : LA CREATION DU DATAFRAME DataTopTour A ECHOUEE.")
+            print(Fore.RED + "ERROR : Revolution counter calculated data could not be stored.")
 
         
         #%%
+        print("-----------------------")
         print("IMU data calculation...")
         
         try :
-            BmxOrientation = ImuOrientation(locals()[ZoneList[zone]]['DataPedalier']['time'],locals()[ZoneList[zone]]['RawData'].iloc[:,len(locals()[ZoneList[zone]]['RawData'].columns)-6:len(locals()[ZoneList[zone]]['RawData'].columns)],Verification='Oui')
+            BmxOrientation = ImuOrientation(locals()[ZoneList[zone]]['DataPedalier']['time'],locals()[ZoneList[zone]]['RawData'].iloc[:,len(locals()[ZoneList[zone]]['RawData'].columns)-6:len(locals()[ZoneList[zone]]['RawData'].columns)],VerificationImuOrientation=VerificationImuOrientation)
             locals()[ZoneList[zone]]['DataIMU'] = {}
             locals()[ZoneList[zone]]['DataIMU'] = pd.DataFrame(data = {'GyroX':locals()[ZoneList[zone]]['RawData']['gyro_x'],'GyroY':locals()[ZoneList[zone]]['RawData']['gyro_y'],'GyroZ':locals()[ZoneList[zone]]['RawData']['gyro_z'],
                                                                        'AccX':locals()[ZoneList[zone]]['RawData']['acc_x'],'AccY':locals()[ZoneList[zone]]['RawData']['acc_y'],'AccZ':locals()[ZoneList[zone]]['RawData']['acc_z'],
                                                                        'Roulis':BmxOrientation[:,0],'Tangage':BmxOrientation[:,1],'Lacet':BmxOrientation[:,2]})
+            print('- Orientation calculation successful.')
         except :
             print(Fore.RED + "ERROR : IMU Orientation calculation failed.")
         
@@ -396,7 +376,7 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
     #%% ===========================================================================
     # EXPORT DES DONNEES AU FORMAT CSV
     # =============================================================================
-
+    print("------------------------------")   
     for zone in range(0,NbZones):
         try :
             all_data = pd.concat([locals()[ZoneList[zone]]['DataPedalier'], locals()[ZoneList[zone]]['DataTopTour'],locals()[ZoneList[zone]]['DataGPS'],locals()[ZoneList[zone]]['DataIMU']],axis=1,sort=False)
@@ -413,13 +393,13 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
                     all_data = pd.concat([locals()[ZoneList[zone]]['DataPedalier'], locals()[ZoneList[zone]]['DataGPS'],locals()[ZoneList[zone]]['DataIMU']],axis=1,sort=False)
                     all_data.to_csv(DecodedFile[:len(DecodedFile)-4] + '_' + ZoneList[zone] + '.csv',index=False)
                     print("EXTRACTION CSV ZONE " + str(zone+1) + " REUSSIE.")    
-                    print("(Missing Top Tour Data.)")
+                    print("(Missing Revolution counter Data.)")
                 except :
                     try :
                         all_data = pd.concat([locals()[ZoneList[zone]]['DataTopTour'], locals()[ZoneList[zone]]['DataGPS'],locals()[ZoneList[zone]]['DataIMU']],axis=1,sort=False)
                         all_data.to_csv(DecodedFile[:len(DecodedFile)-4] + '_' + ZoneList[zone] + '.csv',index=False)
                         print("EXTRACTION CSV ZONE " + str(zone+1) + " REUSSIE.")
-                        print("(Missing Pedalier Data.)")                         
+                        print("(Missing Crankset Data.)")                         
                     except :
                         try :
                             all_data = pd.concat([locals()[ZoneList[zone]]['DataPedalier'], locals()[ZoneList[zone]]['DataTopTour'],locals()[ZoneList[zone]]['DataGPS']],axis=1,sort=False)

@@ -5,123 +5,145 @@
 from FunctionsBasics import *
 import imufusion
 
-def DetectionNbZones(Data):
-    #Moyenne glissante
-    Pics,_ = find_peaks(Data,height=(800), prominence=500, distance = 20000)
-    NbZones = len(Pics)
-    # plt.figure()
-    # plt.plot(Data)
-    # plt.plot(Pics,Data[Pics],'x')
-    print("NbZones = " + str(NbZones))
-    return NbZones,Pics
 
 def DecoupageZonesActives(Data,NbZones):
     """
-    - Description -
-    This function is used to 
+    USES 
     
-    - Parameters -
-    Data : 
-    NbZones : 
+    * manual method for delimiting the areas to be studied.
+    
+    PARAMETERS
+    
+    * Data : Data set for visualizing different work areas. - Cadence for example. (Nx1) 
+    
+    * NbZones : Number of work areas to be studied. (int)
+    
     """
     FrameLimite = np.zeros([NbZones,2])
+    # For all work area...
     for i in range(0,NbZones) :
+        # Plot the data set
         plt.figure()
         plt.plot(Data)
         plt.xlabel('frame')
         plt.ylabel('Cadence (Tr/min)')
         plt.suptitle('ENCADRER ZONE : '+str(i+1)+'/'+str(NbZones))
-        newleftlim = plt.ginput(n=1)
-        FrameLimite[i,0] = round(newleftlim[0][0])
-        newrightlim = plt.ginput(n=1)
-        FrameLimite[i,1] = newrightlim[0][0]
+        # Let user define left/start limit
+        NewLeftLim = plt.ginput(n=1)
+        FrameLimite[i,0] = round(NewLeftLim[0][0])
+        # Let user define right/end limit
+        NewRightLim = plt.ginput(n=1)
+        FrameLimite[i,1] = NewRightLim[0][0]
+        # Plot limits
         plt.xlim(left=round(FrameLimite[i,0]))
         plt.xlim(right=round(FrameLimite[i,1]))
+        # Close graph (need to be commented to see previous plot)
         plt.close()
     return FrameLimite 
 
-   
-
-def CalculVitesseTopTourArriere(Temps,DataMagneto,IntensitePos,IntensiteNeg,EspacementAimantDeg,Seuil,CirconferenceRoue):
+def DetectionNbZones(Data):
     """
-    - Description -
-    This function is used to 
+    USES 
     
-    - Parameters -
-    Temps : 
-    DataMagneto : 
-    IntensitePos :
-    IntensiteNeg :
-    EspacementAimantDeg :
-    Seuil :
-    CirconferenceRoue :
+    * Automatic method for finding number of areas to be studied.
+    
+    PARAMETERS
+    
+    * Data : Crank gyroscope (Nx1)
+    
     """
-    DataOffset = DataMagneto - Seuil
-    FrameInitTemps = Temps.index[0] 
+    # Find peaks with 100s min distance between each
+    Pics,_ = find_peaks(Data,height=(800), prominence=500, distance = 20000)
+    NbZones = len(Pics)
+    print("Number of areas found : " + str(NbZones))
+    # Determination of apprixomative start & end of each area,
+    # considering that peak appears in roughly the same place for each area
+    FramesLimite=np.zeros((NbZones,2))
+    for i in range(0,NbZones):
+        FramesLimite[i,0]=Pics[i]-2000
+        FramesLimite[i,1]=Pics[i]+7000
+    # Specified limits should be in available frames
+    FramesLimite[FramesLimite < 0] = 0
+    FrameMax = NumberOfNonNans(Data)
+    FramesLimite[FramesLimite > FrameMax] = FrameMax  
+    del FrameMax  
+    
+    return NbZones, FramesLimite
+
+def CalculVitesseTopTourArriere(Time,DataMagneto,MagnetSpacingDegrees,WheelCircumference):
+    """
+    USES 
+    
+    * Calculate Speed thanks to revolution counter at the rear wheel.
+    
+    PARAMETERS
+    
+    * Time : Time data of Revolution counter (Nx1)
+        
+    * DataMagneto : Revolution counter Data (Nx1)
+        
+    * MagnetSpacingDegrees : Spacement between magnets. (int)
+        
+    * WheelCircumference : in mm (int)
+    
+    """
+    
+    # Centering data around 0 and define approximative up and down min limits to search peaks
+    Offset = np.mean(DataMagneto[0:5000])
+    UpThreshold = (np.max(DataMagneto[0:5000])-np.mean(DataMagneto[0:5000]))*6
+    DownThreshold = (np.mean(DataMagneto[0:5000])-np.min(DataMagneto[0:5000]))*6
+    DataOffset = DataMagneto - Offset
+    # Finding peaks
+    FrameInitTemps = Time.index[0] 
     try :
-        PeaksNeg,_ = find_peaks((DataOffset*(-1)),height=(IntensiteNeg,None),prominence=(IntensiteNeg,None),threshold=(0,None))
-        PeaksPos,_ = find_peaks(DataOffset,height=(IntensitePos,None),prominence=(IntensitePos,None),threshold=(0,None))
-        print("TOP TOUR : Détection des pics magnétiques du top tour arrière OK")
+        PeaksNeg,_ = find_peaks((DataOffset*(-1)),height=(DownThreshold,None),prominence=(DownThreshold,None),threshold=(0,None))
+        PeaksPos,_ = find_peaks(DataOffset,height=(UpThreshold,None),prominence=(UpThreshold,None),threshold=(0,None))
+        print("- Magnetic peaks detected.")
     except :
-        print(Fore.RED + 'TOP TOUR : ERREUR DE DETECTION DES PICS')
-        
-    # try :
-    #     fig,axs = plt.subplots(2)
-    #     fig.suptitle("Zone "+str(zone+1))
-    #     axs[0].plot(DataOffset,'-')
-    #     axs[0].plot(PeaksNeg,DataOffset[PeaksNeg],'x')
-    #     axs[0].set_title("Detection pics négatifs")
-    #     axs[1].plot(DataOffset,'-')
-    #     axs[1].plot(PeaksPos,DataOffset[PeaksPos],'x')
-    #     axs[1].set_title("Detection pics positifs")
-    # except :
-    #     print(Fore.RED + "TOP TOUR : ERREUR D'AFFICHAGE DES PICS DETECTES.")
-        
+        print(Fore.RED + 'ERROR : Magnetic peaks could not be detected.') 
     try :
-        
-        # Assemblage de tous les pics dans le même tableau
+        # Group all peaks in same var
         A = PeaksNeg
         PeaksTotal = np.sort((np.append(A,PeaksPos))) 
         del A
-        
-        # Calcul de la distance parcourue entre deux passages d'aimants
-        EspacementAimantTr = EspacementAimantDeg/360
-        DeplacementParTour = (CirconferenceRoue/1000)*EspacementAimantTr
-        
-        # Initialisation des données
-        VitesseTopTourMpS = [0 for i in range(len(PeaksTotal))]
-        VitesseTopTourKmh = [0 for i in range(len(PeaksTotal))]
-        DistanceTopTourM = [0 for i in range(len(PeaksTotal))]
+        # Distance calculation between two magnets
+        MagnetSpacingWheelRound = MagnetSpacingDegrees/360
+        DisplacementWheelRound = (WheelCircumference/1000)*MagnetSpacingWheelRound
+        # Data initialization
+        RevolutionCounterSpeedMeterSecond = [0 for i in range(len(PeaksTotal))]
+        RevolutionCounterSpeedKilometerHour = [0 for i in range(len(PeaksTotal))]
+        DisplacementRevolutionCounterMeter = [0 for i in range(len(PeaksTotal))]
         Xpeaks = PeaksTotal + FrameInitTemps
-        
-        # Calcul de la vitesse en km/h
+        # Speed calculation
         for i in range(1,len(PeaksTotal)-1):
-            DistanceTopTourM[i] = (i+1) * DeplacementParTour
-            VitesseTopTourMpS[i]= (2*DeplacementParTour)/(Temps[Xpeaks[i+1]]-Temps[Xpeaks[i-1]])
-        VitesseTopTourKmh = [i * 3.6 for i in VitesseTopTourMpS]
-        
-        print('TOP TOUR : Calcul de la vitesse via le top tour OK')
+            DisplacementRevolutionCounterMeter[i] = (i+1) * DisplacementWheelRound
+            RevolutionCounterSpeedMeterSecond[i]= (2*DisplacementWheelRound)/(Time[Xpeaks[i+1]]-Time[Xpeaks[i-1]])
+        RevolutionCounterSpeedKilometerHour = [i * 3.6 for i in RevolutionCounterSpeedMeterSecond]
+        print('- Speed calculation successful.')
     except :
-        print(Fore.RED + "TOP TOUR : ERREUR DE CALCUL DE LA VITESSE PAR ROUE ARRIERE.")
-        
-    return Xpeaks[1:], PeaksTotal[1:], VitesseTopTourKmh, DistanceTopTourM, PeaksNeg, PeaksPos
+        print(Fore.RED + "ERROR : Speed could not be calculated.")
+    return Xpeaks[1:], PeaksTotal[1:], RevolutionCounterSpeedKilometerHour, DisplacementRevolutionCounterMeter, PeaksNeg, PeaksPos
 
-def Resynchro(TempsPedalier,Verification="Oui"):
+def Resynchro(CranksetTime,VerificationResynchro="No"):
     """
-    - Description -
-    This function is used to 
+    USES
     
-    - Parameters -
-    TempsPedalier : 
-    Verification : 
+    * Resynchronize data at each frame thanks to ponctual Phyling resynchronization.
+    
+    PARAMETERS
+    
+    * CranksetTime : Crankset time data.  (Nx1)
+        
+    * VerificationResynchro : Yes/No var to verify graphically the resynchronization. (str)
+        
     """
     
-    diff = np.diff(TempsPedalier)
+    diff = np.diff(CranksetTime)
     index_diff = np.where(diff < 0)
     #Nous retourne les index du temps juste avant la resynchro (t1)
     NbResynchro = len(index_diff[0])
     
-    TempsPedalierResynchro=(np.zeros(shape=[len(TempsPedalier),1]))*np.nan
+    CranksetTimeResynchro=(np.zeros(shape=[len(CranksetTime),1]))*np.nan
     if NbResynchro>0:
         for r in range(0,NbResynchro):
             
@@ -134,86 +156,85 @@ def Resynchro(TempsPedalier,Verification="Oui"):
         
             Pmoy = np.mean(diff[FrameDepartResynchro:index_diff[0][r]])    
             #Calculer l'offset deresynchro
-            OffsetTotal = TempsPedalier[index_diff[0][r]]-(TempsPedalier[index_diff[0][r]+1]-Pmoy)  
+            OffsetTotal = CranksetTime[index_diff[0][r]]-(CranksetTime[index_diff[0][r]+1]-Pmoy)  
             
             #Appliquer l'Offset proportionnellement à la frame depuis la dernière synchro
             for t in range(FrameDepartResynchro,index_diff[0][r]+1) :
-                Correction = ((TempsPedalier[t]-TempsPedalier[FrameDepartResynchro])*OffsetTotal)/(TempsPedalier[index_diff[0][r]+1]-TempsPedalier[FrameDepartResynchro])
-                TempsPedalierResynchro[t]=TempsPedalier[t]-Correction
+                Correction = ((CranksetTime[t]-CranksetTime[FrameDepartResynchro])*OffsetTotal)/(CranksetTime[index_diff[0][r]+1]-CranksetTime[FrameDepartResynchro])
+                CranksetTimeResynchro[t]=CranksetTime[t]-Correction
                 
             #Rajouter les dernières frames qui ne peuvent pas être resynchro
             if r == NbResynchro-1 :
-                for t in range((index_diff[0][r])+1,NumberOfNonNans(TempsPedalier)):
-                    TempsPedalierResynchro[t]=TempsPedalier[t]
+                for t in range((index_diff[0][r])+1,NumberOfNonNans(CranksetTime)):
+                    CranksetTimeResynchro[t]=CranksetTime[t]
           
         # Vérification
-        if Verification in ['Oui','oui','OUI','o','O','YES','Yes','yes','Y','y'] :
+        if VerificationResynchro in ['Oui','oui','OUI','o','O','YES','Yes','yes','Y','y'] :
             plt.figure()
-            plt.plot(TempsPedalier) 
-            plt.plot(TempsPedalierResynchro)
-            plt.legend(['Temps pédalier Raw','Temps pédalier resynchro']) 
+            plt.plot(CranksetTime) 
+            plt.plot(CranksetTimeResynchro)
+            plt.title('VERIFICATION : Resynchro')
+            plt.legend(['Raw crankset time','Resynchro crankset time']) 
             plt.xlabel('Frame')
             plt.ylabel('Temps (s)') 
     elif NbResynchro == 0:
-        TempsPedalierResynchro = TempsPedalier
+        CranksetTimeResynchro = CranksetTime
         
-    return TempsPedalierResynchro
+    return CranksetTimeResynchro
 
-def ImuOrientation(Temps,Data,Verification='Oui'):
+def ImuOrientation(Time,Data,VerificationImuOrientation='No'):
     
     """
-    Determination of IMU orientation in Eulerian parameters 
-    thanks to Fusion algorithm (gyrometer + accelerometer)
+    USES 
     
-    :param Path:
-    :type Path: str
+    * Determination of IMU orientation in Eulerian parameters thanks to Fusion algorithm (gyrometer + accelerometer).
+    
+    
+    PARAMETERS
+    
+    * Time : Time associate to Data. (Nx1)
+
+    * Data : X-Y-Z Gyro & X-Y-Z Accelero data. (Nx6)
         
-    :param Temps: n x 1 serie
-    :type Temps: pd.series
-        
-    :param Data: n x 6 series, containing gyro & accelero data
-    :type Data: pd.DataFrame
-        
-    :param Verification: Boolean to hide/unhide orientation plot
-    :type Verification: str
+    * VerificationImuOrientation : Yes/No var to verify graphically the Orientation. (str) 
  
     """
     
     #----------------------------------------------------------- Calcul Offset Gyro
         
     try :
-        #OFFSET
+        #Offset determination & application
         # GyroX
-        FrameFinIntOffsetGyroX,_ = DetectionFrontMontant(Data['gyro_x'],Temps,0,100)
+        FrameFinIntOffsetGyroX,_ = DetectionFrontMontant(Data['gyro_x'],Time,0,100)
         OffsetGyroX= np.mean(Data['gyro_x'][0:FrameFinIntOffsetGyroX-20])
         GyroX = Data['gyro_x'] - OffsetGyroX
         # GyroY
-        FrameFinIntOffsetGyroY,_ = DetectionFrontMontant(Data['gyro_y'],Temps,0,100)
+        FrameFinIntOffsetGyroY,_ = DetectionFrontMontant(Data['gyro_y'],Time,0,100)
         OffsetGyroY= np.mean(Data['gyro_y'][0:FrameFinIntOffsetGyroY-20])
         GyroY = Data['gyro_y'] - OffsetGyroY
         # GyroZ
-        FrameFinIntOffsetGyroZ,_ = DetectionFrontMontant(Data['gyro_z'],Temps,0,100)
+        FrameFinIntOffsetGyroZ,_ = DetectionFrontMontant(Data['gyro_z'],Time,0,100)
         OffsetGyroZ= np.mean(Data['gyro_z'][0:FrameFinIntOffsetGyroZ-20])
         GyroZ = Data['gyro_z'] - OffsetGyroZ
         
-        #FILTRAGE
+        #Filtering
         GyroX = FiltrageButterworth(GyroX,200,20)
         GyroY = FiltrageButterworth(GyroY,200,20)
         GyroZ = FiltrageButterworth(GyroZ,200,20)
                 
     except :
-        print(Fore.RED + "IMU : ERREUR LORS DU CALCUL DE L'OFFSET DES GYRO")
+        print(Fore.RED + "ERROR : Gyroscope offset could not be calculated.")
 
     # =============================================================================
-    # CALCUL DE L'ORIENTATION
+    # ORIENTATION CALCULATION
     # =============================================================================    
 
-    #Créer le csv pour la mise en forme des données    
-    d = {'Time (s)':Temps,'Gyroscope X (deg/s)':GyroX,'Gyroscope Y (deg/s)':GyroY,'Gyroscope Z (deg/s)':GyroZ,'Accelerometer X (g)':Data['acc_x'],'Accelerometer Y (g)':Data['acc_y'],'Accelerometer Z (g)':Data['acc_z']}
+    #csv creation for data formatting   
+    d = {'Time (s)':Time,'Gyroscope X (deg/s)':GyroX,'Gyroscope Y (deg/s)':GyroY,'Gyroscope Z (deg/s)':GyroZ,'Accelerometer X (g)':Data['acc_x'],'Accelerometer Y (g)':Data['acc_y'],'Accelerometer Z (g)':Data['acc_z']}
     DataIMU = pd.DataFrame(data = d)
     DataIMU.to_csv("TEMPORAIRE_DataForOrientationExtraction.csv")
 
-    #Extraire les données grace à l'algo de fusion
+    #Data extraction thanks to fusion algorithm
     # Import sensor data
     data = np.genfromtxt("TEMPORAIRE_DataForOrientationExtraction.csv", delimiter=",", skip_header=1)
     timestamp = data[:, 1]
@@ -235,17 +256,17 @@ def ImuOrientation(Temps,Data,Verification='Oui'):
         euler[index] = ahrs.quaternion.to_euler()
 
 
-    #Changement de l'orientation pour plus de compréhesion :
+    #Changing orientation to be more comprehensive :
         # X = axe dans le sens d'avancement, rotation positive vers la droite
         # Y = axe medio-latéral, rotation positive vers le haut
         # Z = Axe antéro-postérieur, position vers la droite 
     OrientationIMU = euler*[-1,-1,1]
        
-    #Supprimer le fichier temporaire     
+    # Tempory file supression   
     import os
     os.remove("TEMPORAIRE_DataForOrientationExtraction.csv") 
 
-    if Verification in ['OUI','Oui','oui','O','o','YES','Yes','yes','Y','y']:
+    if VerificationImuOrientation in ['OUI','Oui','oui','O','o','YES','Yes','yes','Y','y']:
         plt.figure()
         plt.plot(OrientationIMU[:,0]) 
         plt.plot(OrientationIMU[:,1])
@@ -253,8 +274,7 @@ def ImuOrientation(Temps,Data,Verification='Oui'):
         plt.grid()
         plt.legend(["Autour de x","Autour de y","Autour de Z"])  
         plt.xlabel("Frame") 
-        plt.ylabel("Angle (°)")    
-        
-        
+        plt.ylabel("Angle (°)") 
+        plt.title('VERIFICATION : Orientation IMU')
         
     return OrientationIMU

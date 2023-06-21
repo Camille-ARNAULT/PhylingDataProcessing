@@ -8,17 +8,18 @@ from decoder import decoder
 def PhylingDecoder(Path, RawFileName):
     
     """
-    Extract CSV file with all decoded data.
+    USES
     
-        
-    :param Path: Path of the Raw File you need to decod
-    :type Path: str
+    * Extract CSV file with all decoded data.
     
-    :param RawFileName: name of Phyling raw file with .txt extention
-    :type RawFileName: str
+    PARAMETERS
     
-    :param OutputFileName: name of output file with .csv extention
-    :type OutputFileName: str
+    * Path : path of the Raw File you need to decode. (str)
+    
+    * RawFileName : name of Phyling raw file with .txt extention. (str)
+
+    * OutputFileName : name of output file with .csv extention (str)
+
     """
     
     #Decoding raw data

@@ -13,7 +13,10 @@ os.chdir(CurrentPath)
 
 # User input :
 Path = "C:\\Users\\admin\\Desktop\\TestModuleGitHub\\"
-RawFileName = "DonneesTestGitHub_Sylvain17PM"
+RawFileName = "DonneesTestGitHub"
+
+Path = "C:\\Users\\carnau22\\Documents\\BMX\Datas\\202305_Glasgow\\2023_05_17_AM\\"
+RawFileName = "phyling_120_59_20230517_090706"
 
 #------------------------------------------------------------------------------
 
@@ -29,6 +32,13 @@ Braquet = 50/18
 LongueurManivelle = 177.5
 AngleCadre = 6
 EspacementAimant = 90
+
+VerificationResynchro = "No"
+VerificationCrankPeaks = "No"
+VerificationImuOrientation = "No"
+VerificationRevolutionCounterPeaks = "No"
+VerificationRevolutionCounterSpeed= "No"
+
     
 #------------------------------------------------------------------------------
 
@@ -36,7 +46,12 @@ EspacementAimant = 90
 from Calculation import Calculation
 NbZones = Calculation(Path+RawFileName+'.csv',
                       CirconferenceRoue=CirconferenceRoue,Braquet=Braquet,LongueurManivelle=LongueurManivelle,AngleCadre=AngleCadre,
-                      EspacementAimant=EspacementAimant)
+                      EspacementAimant=EspacementAimant,
+                      VerificationResynchro=VerificationResynchro,
+                      VerificationCrankPeaks=VerificationCrankPeaks,
+                      VerificationRevolutionCounterPeaks=VerificationRevolutionCounterPeaks,
+                      VerificationRevolutionCounterSpeed=VerificationRevolutionCounterSpeed,
+                      VerificationImuOrientation=VerificationImuOrientation)
 
 #%% START DATA EXTRACTION
 
@@ -97,11 +112,17 @@ for zone in range(0,NbZones):
 #%% ANALYSE GRAPHIQUE
 
 # User input :
-DataToPlot = "PositionManivelleGauche"
-Unit = "J"
+DataToPlot = "Roulis"
+Unit = "N"
 TypeAffichage = "Instant" # "Instant" ou "Cumulative"
-ZonesEtudiees = range(0,NbZones)
-Color=[]
+ZonesEtudiees = range(0,9)
+
+# RougeClair = "#FF0000"
+# RougeFonce = "#8C0001"
+# BleuClair = "#5790C1" 
+# BleuFonce = "#0C1365"
+# Color = [BleuFonce,RougeClair,BleuFonce,RougeFonce,BleuClair,BleuFonce,BleuFonce,RougeFonce,RougeFonce,"#FF000000",BleuFonce,BleuClair,RougeClair,BleuFonce,"#FF000000","#FF000000","#FF000000"]
+
 
 ''' Select DataToPlot and its unit in this list :
         

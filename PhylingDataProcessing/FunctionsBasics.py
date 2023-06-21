@@ -13,41 +13,55 @@ from scipy.interpolate import CubicSpline
 
 def InterpolationResample(xinit,xfinal,y):
     """
-    - Description -
-    This function is used to resample data with specific frequency.
+    USES
     
-    - Parameters - 
-    xinit : original abscissa of the data to be resampled
-    xfinal : abscissa needed
-    y : original ordinate of the data to be resampled
+    * Resample data with specific frequency.
+    
+    
+    PARAMETERS
+    
+    * xinit : original abscissa of the data to be resampled (Nx1)
+    
+    * xfinal : abscissa needed (Nx1)
+    
+    * y : original ordinate of the data to be resampled (Nx1)
+    
     """
-    data_interpolated = CubicSpline(xinit,y)
-    data_resample=data_interpolated(xfinal)
-    return data_resample
+    InterpolatedData = CubicSpline(xinit,y)
+    ResampledData=InterpolatedData(xfinal)
+    return ResampledData
 
-def NumberOfNonNans(data):
+def NumberOfNonNans(Data):
     """
-    - Description -
-    This function is used to find number of non Nans in data.
+    USES
     
-    - Parameters -
-    data : Data you need to know number of non Nans.
+    * Find number of non Nans in data.
+    
+    PARAMETERS
+    
+    * Data : Data set for which you want to know the number of non Nans. (Nx1)
     """
-    count = 0
-    for i in data:
+    Count = 0
+    for i in Data:
         if not np.isnan(i):
-            count += 1
-    return count
+            Count += 1
+    return Count
  
 def FiltrageButterworth(Data,FreqAcq,FreqCut):
     """
-    - Description -
-    This function is used to apply Butterworth filter on data.
+    USES
     
-    - Parameters -
-    Data : Data you want to filter.
-    FreqAcq : Data frequency.
-    FreqCut: Maximum high frequency. 
+    * Apply Butterworth filter on data.
+    
+    
+    PARAMETERS
+    
+    * Data : Data you want to filter. (Nx1)
+    
+    * FreqAcq : Data frequency. (int)
+    
+    * FreqCut : Maximum high frequency. (int)
+    
     """
     w = FreqCut / (FreqAcq / 2) # Normalize the frequency
     b, a = butter(5, w, 'low')
@@ -56,57 +70,70 @@ def FiltrageButterworth(Data,FreqAcq,FreqCut):
 
 def IntegrationTrapeze(Data,FreqAcq):
     """
-    - Description -
-    This function is used to apply the trapezoidal method integration.
+    USES
     
-    - Parameters -
-    Data : Data you want to integrate.
-    FreqAcq : Data frequency.
+    * Apply the trapezoidal method integration.
+    
+    
+    PARAMETERS
+    
+    * Data : Data you want to integrate. (Nx1)
+    
+    * FreqAcq : Data frequency. (int)
+    
     """
-    donnees_integrees = np.zeros(shape=(len(Data),1))
+    IntegratedData = np.zeros(shape=(len(Data),1))
     for i in range(1,len(Data)) :
-        aire_rectangle = (min(Data[i],Data[i-1]))*(1/FreqAcq)
-        aire_triangle = (abs(Data[i]-Data[i-1])*(1/FreqAcq))/2
-        donnees_integrees[i] = aire_rectangle + aire_triangle
-    return donnees_integrees
+        RectangleArea = (min(Data[i],Data[i-1]))*(1/FreqAcq)
+        TriangleArea = (abs(Data[i]-Data[i-1])*(1/FreqAcq))/2
+        IntegratedData[i] = RectangleArea + TriangleArea
+    return IntegratedData
 
 def IndexNearestValue(Array, Value): 
     """
-    - Description -
-    This function is used to 
+    USES
     
-    - Parameters -
-    Array : 
-    Value : 
+    * Find the index of the value that is closest to a given value.
+    
+    PARAMETERS
+    
+    * Array : data in which to search Value. (Nx1)
+        
+    * Value : Value you want to find. (int)
+        
     """
     Array = np.asarray(Array)
     Index = (np.abs(Array - Value)).argmin()
     return Index
 
-def DetectionFrontMontant(DataADeriver,TempsDataADeriver,LimInit,LimEnd):
+def DetectionFrontMontant(DataToDerive,TimeDataToDerive,LimInit,LimEnd):
     """
-    - Description -
-    This function is used to 
+    USES
     
-    - Parameters -
-    DataADeriver : 
-    TempsDataADeriver : 
-    LimInit :
-    LimEnd :
+    * Detect rising
+    
+    PARAMETERS
+    
+    * DataToDerive : Data in which you want detect the rising instant. (Nx1)
+        
+    * TimeDataToDerive : Abscissa of DataToDerive. (Nx1)
+        
+    * LimInit : Analysis start frame. (int)
+        
+    * LimEnd : Analysis end frame. (int)
+        
     """
-    # Calcul de la dérivée de la donnée
-    DataDerivee = [0 for i in range(0,len(DataADeriver))]
-    for i in range(1,len(DataADeriver)-1):
-        DataDerivee[i]=(DataADeriver[i+1]-DataADeriver[i-1])/(TempsDataADeriver[i+1]-TempsDataADeriver[i-1])
-    
-    # Calcul de l'écart-type dans l'intervalle fourni par l'utilisateur
-    DataDerivee_STD = np.std(DataDerivee[LimInit:LimEnd])
-    
-    # Recherche de la frame à laquelle DataDerivee > 3*std
-    FrameSup3Std = LimEnd
-    while abs(DataDerivee[FrameSup3Std]) < DataDerivee_STD *3 :
-        FrameSup3Std = FrameSup3Std +1   
-    return FrameSup3Std, DataDerivee_STD
+    # Derivative calculation
+    DerivatedData = [0 for i in range(0,len(DataToDerive))]
+    for i in range(1,len(DataToDerive)-1):
+        DerivatedData[i]=(DataToDerive[i+1]-DataToDerive[i-1])/(TimeDataToDerive[i+1]-TimeDataToDerive[i-1])
+    # Standard deviation calculation
+    DerivatedDataSTD = np.std(DerivatedData[LimInit:LimEnd])
+    # Find frame at which DerivatedData > 3*std
+    RisingFrame = LimEnd
+    while abs(DerivatedData[RisingFrame]) < DerivatedDataSTD *3 :
+        RisingFrame = RisingFrame +1   
+    return RisingFrame, DerivatedDataSTD
 
 
 
