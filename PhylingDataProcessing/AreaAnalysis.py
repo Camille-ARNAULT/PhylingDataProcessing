@@ -49,11 +49,11 @@ def Start(Data):
         print(Fore.RED + "ERROR : Impulse & work could not be calculated.")
     
     # Max retreat Crank Angle at starting gate
-    FrameReculMax = np.argmin(Data['CadenceTrMin'][FrameInit:FrameInit+100])
-    AngleManivelleReculMax = Data['PositionManivelleGauche'][FrameReculMax]
-    AngleTotalRecul = Data['PositionManivelleGauche'][FrameReculMax]-Data['PositionManivelleGauche'][0]
+    FrameReculMax = FrameInit+np.argmin(Data['PositionManivelleGauche'][FrameInit:FrameInit+100])
+    AngleManivelleGaucheReculMax = Data['PositionManivelleGauche'][FrameReculMax]
+    AngleTotalRecul = Data['PositionManivelleGauche'][FrameReculMax]-Data['PositionManivelleGauche'][FrameInit]
          
-    return FrameInit, FrameEnd, IndexCP, ImpulsionDCP, TravailDCP, AngleManivelleReculMax, AngleTotalRecul   
+    return FrameInit, FrameEnd, IndexCP, ImpulsionDCP, TravailDCP, AngleManivelleGaucheReculMax, AngleTotalRecul
 
 def EndMound(Data,FrameInit):
     # Trouver le temps en bas de butte

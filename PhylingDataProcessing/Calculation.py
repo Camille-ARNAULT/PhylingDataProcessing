@@ -6,7 +6,7 @@ from FunctionsCalculation import * #DecoupageZonesActives,CalculVitesseTopTourAr
 from sklearn.linear_model import LinearRegression
 from datetime import datetime
 
-def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,FreqAcq=200,EspacementAimant=90):
+def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurManivelle=177.5,AngleCadre=6,EspacementAimant=90):
     
     print("----------> READING DATA...")
     
@@ -234,29 +234,72 @@ def Calculation(DecodedFile,CirconferenceRoue=1591.67,Braquet=44/16,LongueurMani
             print("- Crank calculation successful.")
         except :
             print(Fore.RED + "ERROR : Crank displacement could not be calculated.")
-        #Find magneto pedalier peaks
+        #Magneto data filtering & magneto pedalier peaks detection
         try :
-            MagnetoPeaks,_ = find_peaks(locals()[ZoneList[zone]]['RawData']['magneto'],height=(10000,None),prominence=(1000,None))  
+            DataMagnetoPedalierFiltrees = FiltrageButterworth(DataPedalierCrop['magneto_pedalier'],200,50)
+            MagnetoPeaks,_ = find_peaks(DataMagnetoPedalierFiltrees,height=(10000,None),prominence=(500,None)) 
+            #Verification
+            plt.figure()
+            plt.plot(MagnetoPeaks,DataMagnetoPedalierFiltrees[MagnetoPeaks],'x')
+            plt.plot(DataMagnetoPedalierFiltrees)            
             print("- Pedalier magnetic peaks detected.")
         except :
             print(Fore.RED + "ERROR : Pedalier magnetic peaks could not be detected.")
-        #Displacement sum in BMX landmark
+        #METHODE 1, WITHOUT READJUSTMENT - Displacement sum in BMX landmark
+        # try :
+        #     SommeDeplacementAngulairePedalier = np.cumsum(DeplacementAngulairePedalier)
+        #     FirstPeak = MagnetoPeaks[0]
+        #     PositionReelleFirstPeak = 270-AngleCadre
+        #     Correction = PositionReelleFirstPeak-SommeDeplacementAngulairePedalier[FirstPeak]
+        #     PositionPedalierGauche = SommeDeplacementAngulairePedalier+Correction
+        #     PositionPedalierGauche = PositionPedalierGauche%360 
+        #     print("- Total displacement in BMX landmark successfully calculated.")
+        # except :
+        #     print(Fore.RED + "ERROR : Total displacement could not be calculated.")
+        
+        #METHODE 2, WITH MAGNETIC READJUSTMENT - Displacement sum in BMX landmark 
         try :
+            
+            #Angular correction
+            AngleReel = 270-AngleCadre
             SommeDeplacementAngulairePedalier = np.cumsum(DeplacementAngulairePedalier)
-            FirstPeak = MagnetoPeaks[0]
-            PositionReelleFirstPeak = 270-AngleCadre
-            Correction = PositionReelleFirstPeak-SommeDeplacementAngulairePedalier[FirstPeak]
-            PositionPedalierGauche = SommeDeplacementAngulairePedalier+Correction
-            PositionPedalierGauche = PositionPedalierGauche%360 
-            print("- Total displacement in BMX landmark successfully calculated.")
+            SommeDeplacementAngulairePedalierCorrige=[0 for i in range(0,len(SommeDeplacementAngulairePedalier))]
+                                                                       
+            for i in range(0,len(MagnetoPeaks)+1):
+                if i==0 :
+                    offset = AngleReel-SommeDeplacementAngulairePedalier[MagnetoPeaks[i]]
+                    for j in range(0,MagnetoPeaks[0]+1):
+                        SommeDeplacementAngulairePedalierCorrige[j]=SommeDeplacementAngulairePedalier[j]+offset
+                if i==len(MagnetoPeaks) :
+                    OffsetContinu = (360*(i-1)+AngleReel)-SommeDeplacementAngulairePedalier[MagnetoPeaks[i-1]]
+                    for j in range(MagnetoPeaks[i-1],len(SommeDeplacementAngulairePedalier)):
+                        SommeDeplacementAngulairePedalierCorrige[j]=SommeDeplacementAngulairePedalier[j]+OffsetContinu
+                else :
+                    OffsetContinu = (360*(i-1)+AngleReel)-SommeDeplacementAngulairePedalier[MagnetoPeaks[i-1]]
+                    for j in range(MagnetoPeaks[i-1],MagnetoPeaks[i]+1):
+                        SommeDeplacementAngulairePedalierCorrige[j]=SommeDeplacementAngulairePedalier[j]+OffsetContinu
+                    
+                    OffsetVariable = (360*i+AngleReel)-SommeDeplacementAngulairePedalierCorrige[MagnetoPeaks[i]]
+                    LongueurApplicationOffset = MagnetoPeaks[i]-MagnetoPeaks[i-1]
+                    Inc = 0
+                    for j in range(MagnetoPeaks[i-1],MagnetoPeaks[i]+1):
+                        Coef = (OffsetVariable/LongueurApplicationOffset)*Inc
+                        SommeDeplacementAngulairePedalierCorrige[j]=SommeDeplacementAngulairePedalierCorrige[j]+Coef
+                        Inc = Inc+1              
+                
+                #Modulo 360
+                AngleManivelleGauche = [0 for i in range(0,len(SommeDeplacementAngulairePedalierCorrige))]
+                AngleManivelleDroite = [0 for i in range(0,len(SommeDeplacementAngulairePedalierCorrige))]
+                for j in range(0,len(SommeDeplacementAngulairePedalierCorrige)):
+                    AngleManivelleGauche[j]=SommeDeplacementAngulairePedalierCorrige[j]%360
+                    AngleManivelleDroite[j]=(SommeDeplacementAngulairePedalierCorrige[j]-180)%360
         except :
             print(Fore.RED + "ERROR : Total displacement could not be calculated.")
-        
         #Data Storage in Dataframe
         try :
             locals()[ZoneList[zone]]['DataPedalier'] = {}
             locals()[ZoneList[zone]]['DataPedalier'] = pd.DataFrame(data = {'time':x,'CadenceTrMin':CadenceTrMin,'VitessePedalier':VitessePedalier,'DistancePedalier':DistancePedalier,
-                                                                            'PositionManivelleGauche':PositionPedalierGauche,
+                                                                            'PositionManivelleGauche':AngleManivelleGauche,'PositionManivelleDroite':AngleManivelleDroite,
                                                                             'ForceGauche':ForceGaucheFiltree,'ForceDroite':ForceDroiteFiltree,'ForceTotale':ForceTotale,'ForceTotaleAbsolue':ForceTotaleAbsolue,
                                                                             'CoupleGauche':CoupleGauche,'CoupleDroite':CoupleDroite,'CoupleTotal':CoupleTotal,
                                                                             'PuissanceGauche':PuissanceGauche,'PuissanceDroite':PuissanceDroite,'PuissanceTotale':PuissanceTotale,

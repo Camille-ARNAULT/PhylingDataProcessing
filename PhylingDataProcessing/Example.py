@@ -64,7 +64,7 @@ for zone in range(0,NbZones):
     
     # Start parameters calculation
     if StartAnalysis in ["YES","Yes","yes","Y","y","OUI","Oui","oui","O","o"]:
-        FrameInit,FrameEnd,IndexCP,ImpulsionDCP,TravailDCP,AngleManivelleReculMax,AngleTotalRecul = Start(Data)
+        FrameInit,FrameEnd,IndexCP,ImpulsionDCP,TravailDCP,AngleManivelleGaucheReculMax,AngleTotalRecul = Start(Data)
         # Storage
         locals()["Zone"+str(zone+1)] = {}
         locals()["Zone"+str(zone+1)]['Data'] = Data
@@ -74,9 +74,9 @@ for zone in range(0,NbZones):
         locals()["Zone"+str(zone+1)]['IndexCP'] = IndexCP
         locals()["Zone"+str(zone+1)]['ImpulsionDCP'] = ImpulsionDCP
         locals()["Zone"+str(zone+1)]['TravailDCP'] = TravailDCP
-        locals()["Zone"+str(zone+1)]['AngleManivelleReculMax'] = AngleManivelleReculMax
+        locals()["Zone"+str(zone+1)]['AngleManivelleGaucheReculMax'] = AngleManivelleGaucheReculMax
         locals()["Zone"+str(zone+1)]['AngleTotalRecul'] = AngleTotalRecul
-        del AngleManivelleReculMax, AngleTotalRecul,FrameEnd,ImpulsionDCP,IndexCP,TravailDCP
+        del AngleManivelleGaucheReculMax, AngleTotalRecul,FrameEnd,ImpulsionDCP,IndexCP,TravailDCP
     
     # End mound time calculation
     if EndMoundAnalysis in ["YES","Yes","yes","Y","y","OUI","Oui","oui","O","o"]:
@@ -97,7 +97,7 @@ for zone in range(0,NbZones):
 #%% ANALYSE GRAPHIQUE
 
 # User input :
-DataToPlot = "ForceGauche"
+DataToPlot = "PositionManivelleGauche"
 Unit = "J"
 TypeAffichage = "Instant" # "Instant" ou "Cumulative"
 ZonesEtudiees = range(0,NbZones)
@@ -105,6 +105,8 @@ Color=[]
 
 ''' Select DataToPlot and its unit in this list :
         
+        - Left crank angle in ° : PositionManivelleGauche
+        - Right crank angle in ° = PositionManivelleDroite
         - Cadence in tr/min : CadenceTrMin
         - Linear Speed in km/h : VitesseTopTour
         
