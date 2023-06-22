@@ -60,6 +60,12 @@ StartAnalysis = "Yes"
 EndMoundAnalysis = "Yes" 
 FirstJumpAnalysis = "Yes"
 
+
+VerificationStartDetection = "No"
+VerificationPedalStroke = "No"
+VerificationEndStartHill = "No"
+VerificationFirstJump = "No"
+
 #------------------------------------------------------------------------------    
     
 # Code :
@@ -79,7 +85,7 @@ for zone in range(0,NbZones):
     
     # Start parameters calculation
     if StartAnalysis in ["YES","Yes","yes","Y","y","OUI","Oui","oui","O","o"]:
-        FrameInit,FrameEnd,IndexCP,ImpulsionDCP,TravailDCP,AngleManivelleGaucheReculMax,AngleTotalRecul = Start(Data)
+        FrameInit,FrameEnd,IndexCP,ImpulsionDCP,TravailDCP,AngleManivelleGaucheReculMax,AngleTotalRecul = Start(Data,VerificationStartDetection,VerificationPedalStroke)
         # Storage
         locals()["Zone"+str(zone+1)] = {}
         locals()["Zone"+str(zone+1)]['Data'] = Data
@@ -95,14 +101,14 @@ for zone in range(0,NbZones):
     
     # End mound time calculation
     if EndMoundAnalysis in ["YES","Yes","yes","Y","y","OUI","Oui","oui","O","o"]:
-        TempsBasButte = EndMound(Data,FrameInit)
+        TempsBasButte = EndStartHill(Data,FrameInit,VerificationEndStartHill=VerificationEndStartHill)
         # Storage
         locals()["Zone"+str(zone+1)]['TempsBasButte'] = TempsBasButte
         del TempsBasButte
         
     # First jump time
     if FirstJumpAnalysis in ["YES","Yes","yes","Y","y","OUI","Oui","oui","O","o"]:
-        TempsDecollage, VitesseDecollage, StdVitesseDecollage = FirstJump(Data,FrameInit)
+        TempsDecollage, VitesseDecollage, StdVitesseDecollage = FirstJump(Data,FrameInit,VerificationFirstJump=VerificationFirstJump)
         locals()["Zone"+str(zone+1)]['TempsDecollage'] = TempsDecollage
         locals()["Zone"+str(zone+1)]['VitesseDecollage'] = VitesseDecollage
         locals()["Zone"+str(zone+1)]['StdVitesseDecollage'] = StdVitesseDecollage 
@@ -115,13 +121,7 @@ for zone in range(0,NbZones):
 DataToPlot = "Roulis"
 Unit = "N"
 TypeAffichage = "Instant" # "Instant" ou "Cumulative"
-ZonesEtudiees = range(0,9)
-
-# RougeClair = "#FF0000"
-# RougeFonce = "#8C0001"
-# BleuClair = "#5790C1" 
-# BleuFonce = "#0C1365"
-# Color = [BleuFonce,RougeClair,BleuFonce,RougeFonce,BleuClair,BleuFonce,BleuFonce,RougeFonce,RougeFonce,"#FF000000",BleuFonce,BleuClair,RougeClair,BleuFonce,"#FF000000","#FF000000","#FF000000"]
+ZonesEtudiees = range(0,NbZones)
 
 
 ''' Select DataToPlot and its unit in this list :

@@ -4,102 +4,135 @@
 
 from FunctionsBasics import *
 
-def DetectionCoupPedaleDepart(DataPuissance,FrameInit,FrameEnd,IndexZonesPedalees,Affichage):
-    """
-    - Description -
-    This function is used to 
-    
-    - Parameters -
-    DataPuissance : 
-    FrameInit : 
-    FrameEnd :
-    IndexZonesPedalees :
-    Affichage :
-    """
-    PuissancePeaks,_ = find_peaks(-DataPuissance[IndexZonesPedalees[0]:IndexZonesPedalees[1]],height=(None,1500),prominence=(500,None))
-    PuissancePeaks = PuissancePeaks+IndexZonesPedalees[0]
-    PuissancePeaks = np.insert(PuissancePeaks,0,IndexZonesPedalees[0])
-    IndexCoupsPedaleDepart = PuissancePeaks
-    if Affichage in ['O','o','OUI','Oui','oui','Y','y','YES','Yes','yes'] :
-        plt.figure()
-        plt.title('Coups de pédale détectés :')
-        plt.plot(DataPuissance[FrameInit:FrameInit+800])
-        plt.plot(PuissancePeaks,DataPuissance[PuissancePeaks],'x')
-    return IndexCoupsPedaleDepart
 
-def DetectionDepartsSemiAuto(CadenceTrMin,NbZones,Etendue):
+def DetectionDepartsSemiAuto(CadenceTrMin,NbZones,SearchInterval,VerificationStartDetection="No"):
     """
-    - Description -
-    This function is used to 
+    USES
     
-    - Parameters -
-    CadenceTrMin : 
-    NbZones :
-    Etendue :
+    * Start instant detection.
+    
+    PARAMETERS
+    
+    * CadenceTrMin : Cadence data. (Nx1)
+    
+    * SearchInterval : Number of frame of the interval in which end instant will be detected. (int)
+    
+    
     """
+    # Cadence plot
     plt.figure()
     plt.plot(CadenceTrMin,'-')
-    plt.title("Détection des Départs : Cliquer avant l'augmentation de la cadence.")
-    #Détermination début
-    FrameInitUser = plt.ginput(n=NbZones,timeout=30,show_clicks=True)
-    FrameInit = [0 for i in range(NbZones)]
-    for depart in range(0,NbZones):
-        it = 0
-        FrameInit[depart] = round(FrameInitUser[depart][0])
-        ValInit = CadenceTrMin[FrameInit[depart]]
-        if (FrameInit[depart]+10000) < len(CadenceTrMin) :
-            while ValInit > -2 and it < 10000 :
-                FrameInit[depart] = FrameInit[depart]+1
-                ValInit = CadenceTrMin[FrameInit[depart]]
-                it = it+1
-        else  :
-            while ValInit > -2 and it < (len(CadenceTrMin)-FrameInit[depart]-1) :
-                FrameInit[depart] = FrameInit[depart]+1
-                ValInit = CadenceTrMin[FrameInit[depart]]
-                it = it+1  
-    for i in range(0,NbZones):
-        FrameInit[i]=FrameInit[i]-20
-    plt.plot(FrameInit,CadenceTrMin[FrameInit],'x') 
-    #Détermination fin           
-    FrameEnd = [0 for i in range(NbZones)]
-    for depart in range(0,NbZones):
-        it = 0
-        MeanCad = np.mean(CadenceTrMin[FrameInit[depart]:FrameInit[depart]+Etendue])
-        StdCad = np.std(CadenceTrMin[FrameInit[depart]:FrameInit[depart]+Etendue])
-        while not (StdCad < 0.5 and StdCad > -0.5) and (MeanCad < 0.5 or MeanCad > -0.5) :
+    plt.suptitle("START DETECTION")
+    plt.title("Clic before start step back.")
+    
+    # User input
+    FrameInitUser = plt.ginput(n=1,timeout=30,show_clicks=True)
+    
+    # Searching exact frame in 10000 frames after user input (or less if end of Cadence data)
+    FrameInit = round(FrameInitUser[0][0])
+    ValInit = CadenceTrMin[FrameInit]
+    it = 0
+    if (FrameInit+10000) < len(CadenceTrMin) :
+        while ValInit > -2 and it < 10000 :
+            FrameInit = FrameInit+1
+            ValInit = CadenceTrMin[FrameInit]
             it = it+1
-            MeanCad = np.mean(CadenceTrMin[FrameInit[depart]+it:FrameInit[depart]+Etendue+it])  
-            StdCad = np.std(CadenceTrMin[FrameInit[depart]+it:FrameInit[depart]+Etendue+it])  
-        FrameEnd[depart] = FrameInit[depart]+it
-    plt.plot(FrameInit,CadenceTrMin[FrameInit],'x')
-    plt.plot(FrameEnd,CadenceTrMin[FrameEnd],'x') 
+    else  :
+        while ValInit > -2 and it < (len(CadenceTrMin)-FrameInit-1) :
+            FrameInit = FrameInit+1
+            ValInit = CadenceTrMin[FrameInit]
+            it = it+1  
+    FrameInit=FrameInit-20
+    
+    #End Detection, defined as instant after Start where mean cadence is in [-0.5;0.5]         
+    it = 0
+    MeanCad = np.mean(CadenceTrMin[FrameInit:FrameInit+SearchInterval])
+    StdCad = np.std(CadenceTrMin[FrameInit:FrameInit+SearchInterval])
+    while not (StdCad < 0.5 and StdCad > -0.5) and (MeanCad < 0.5 or MeanCad > -0.5) :
+        it = it+1
+        MeanCad = np.mean(CadenceTrMin[FrameInit+it:FrameInit+SearchInterval+it])  
+        StdCad = np.std(CadenceTrMin[FrameInit+it:FrameInit+SearchInterval+it])  
+    FrameEnd = FrameInit+it
+        
+    # Plot detected instants
+    if VerificationStartDetection in ['O','o','OUI','Oui','oui','Y','y','YES','Yes','yes'] :
+        plt.plot(FrameInit,CadenceTrMin[FrameInit],'x')
+        plt.plot(FrameEnd,CadenceTrMin[FrameEnd],'x')
+        plt.title("Results :")
+        plt.grid()
+    else :
+        plt.close()
+        
     return FrameInit,FrameEnd 
 
-def FindZonesPedalees(Data,IntRecherche,FrameInit,FrameEnd):
+def FindZonesPedalees(Data,ResearchInterval,FrameInit,FrameEnd):
     """
-    - Description -
-    This function is used to 
+    USES
     
-    - Parameters -
-    Data : 
-    IntRecherche :
-    FrameInit :
-    FrameEnd :
+    * Find start and end of pedaling zone with user input. 
+    
+    PARAMETERS
+    
+    * Data : Cadence Data (Nx1)
+    
+    * ResearchInterval : Number of frame of the research interval to find minimums of cadence around user input. (int)
+    
+    * FrameInit : Start frame (int)
+    
+    *FrameEnd : End frame (int)
+        
     """
     
-    #Récupération des points délimitants renseignés par User
+    # User input to determine start & end of pedaling area
     plt.figure()
     plt.plot(Data[FrameInit:FrameEnd],'-')
-    plt.xlabel('frame')
+    plt.xlabel('Frame')
     plt.ylabel('Cadence (Tr/min)')
-    plt.title('Cliquez sur les minimums de cadence délimitant les zones de pédalage.')
-    FrameUserPedalage = plt.ginput(n=-1,timeout=30,show_clicks=True);
+    plt.suptitle("PEDALING AREA DETECTION")
+    plt.title('Clic twice on minimum of cadence at the start and the end of Pedaling area.')
+    UserInput = plt.ginput(n=2,timeout=30,show_clicks=True);
     
-    # Récupération de la longueur des données totales
-    FrameReellePedalage = [0 for i in range(len(FrameUserPedalage))]
+    # Find real minimums of cadence around user input
+    SearchInterval = [0 for i in range(len(UserInput))]
+    for NumInt in range(0,len(UserInput)):
+        IntervalData=Data[round(UserInput[NumInt][0])-ResearchInterval:round(UserInput[NumInt][0])+ResearchInterval]
+        SearchInterval[NumInt]=np.argmin(IntervalData)+(round(UserInput[NumInt][0])-ResearchInterval)
     
-    for NumInt in range(0,len(FrameUserPedalage)):
-        DataIntervalle=Data[round(FrameUserPedalage[NumInt][0])-IntRecherche:round(FrameUserPedalage[NumInt][0])+IntRecherche]
-        FrameReellePedalage[NumInt]=np.argmin(DataIntervalle)+(round(FrameUserPedalage[NumInt][0])-IntRecherche)
-    plt.plot(FrameReellePedalage,Data[FrameReellePedalage],'x') 
-    return FrameReellePedalage
+    plt.close()
+    
+    return SearchInterval
+
+
+def DetectionCoupPedaleDepart(PowerData,LimitsPedalingArea,VerificationPedalStroke='No'):
+    """
+    USES
+    
+    *  Pedal stroke detection, defined as hollows on Power data.
+    
+    PARAMETERS
+    
+    * PowerData : Total Power data. (Nx1)
+    
+    * LimitsPedalingArea : Start & End frame of pedaling area. (1x2)
+    
+    * VerificationPedalStroke : Yes/No, to verify pedal stroke detection. (str)
+        
+    """
+    
+    # Peaks detection in -Power to find hollows
+    PuissancePeaks,_ = find_peaks(-PowerData[LimitsPedalingArea[0]:LimitsPedalingArea[1]],height=(None,1500),prominence=(500,None))
+    PuissancePeaks = PuissancePeaks+LimitsPedalingArea[0]
+    PuissancePeaks = np.insert(PuissancePeaks,0,LimitsPedalingArea[0])
+    IndexPedalStroke = PuissancePeaks
+    
+    if VerificationPedalStroke in ['O','o','OUI','Oui','oui','Y','y','YES','Yes','yes'] :
+        plt.figure()
+        plt.suptitle("PEDAL STROKE DETECTION")
+        plt.title('Results :')
+        plt.plot(PowerData[LimitsPedalingArea[0]:LimitsPedalingArea[1]])
+        plt.plot(PuissancePeaks,PowerData[PuissancePeaks],'x')
+        plt.xlabel("Frame")
+        plt.ylabel("Power (W)")
+        plt.grid()
+
+    return IndexPedalStroke

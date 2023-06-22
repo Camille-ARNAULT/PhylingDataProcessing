@@ -52,13 +52,8 @@ For each of them, User Input are specified allowing you tu use functions without
 ### Area Analysis
 - find other recurrent and detectable patterns on our data (Pitch/roll/Yaw has still not been investigated)
 
-### Bug correction
-- Correction of the estimation of the crank angle
-
-### Easy to use
-- Improvement graphic description (title,legend,labels)
-- Description for user input
-- Help for all function
+### Improvement & Verification
+- GPS data interpolation
 
 
 

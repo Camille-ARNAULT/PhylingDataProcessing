@@ -1,24 +1,19 @@
-# -*- coding: utf-8 -*-
 """
-Created on Thu Jun  8 08:52:46 2023
-
-@author: admin
+@author: arnaultcamille@univ-poitiers.fr
 """
 
 from FunctionsBasics import *
 from FunctionsAreaAnalysis import *
 
 
-def Start(Data):
+def Start(Data,VerificationStartDetection,VerificationPedalStroke):
         
     #Start Detection
     print('Start Analsysis...')
     try :
         # 1 = nb area to detect
         # 200 = who much frame will be analyzed after the user selection to detect start
-        FrameInit,FrameEnd = DetectionDepartsSemiAuto(Data['CadenceTrMin'],1,200)
-        FrameInit = FrameInit[0]
-        FrameEnd = FrameEnd[0]
+        FrameInit,FrameEnd = DetectionDepartsSemiAuto(Data['CadenceTrMin'],1,200,VerificationStartDetection=VerificationStartDetection)
         print("- Start detected")
     except : 
         print(Fore.RED + "ERROR : Start could not be detected.")
@@ -33,7 +28,7 @@ def Start(Data):
         
     # Pedal stroke detection
     try :
-        IndexCP = DetectionCoupPedaleDepart(Data["PuissanceTotale"],FrameInit,FrameEnd,IndexZP,'oui')
+        IndexCP = DetectionCoupPedaleDepart(Data["PuissanceTotale"],IndexZP,VerificationPedalStroke=VerificationPedalStroke)
         print("- Pedal stroke cycle detected.")
     except :
         print(Fore.RED + "ERROR : Pedal stroke cycle could not be detected.")
@@ -55,60 +50,100 @@ def Start(Data):
          
     return FrameInit, FrameEnd, IndexCP, ImpulsionDCP, TravailDCP, AngleManivelleGaucheReculMax, AngleTotalRecul
 
-def EndMound(Data,FrameInit):
-    # Trouver le temps en bas de butte
+def EndStartHill(Data,FrameInit,VerificationEndStartHill="No"):
+    """
+    USES 
+    
+    * Find instant of the end of the start hill.
+    
+    PARAMETERS
+    
+    * Data = All dataframe of the try, containing at least Forces and Cadence (NxM)
+    
+    * FrameInit = Start frame of the try. (int)
+    
+    * VerificationEndStartHill = Yes/No to verify the instant that has been detected for the end of start hill. (str)
+    
+    """
+    # Find instant of end mound
     plt.figure()
     plt.plot(Data['ForceTotaleAbsolue'][FrameInit:FrameInit+800])
     plt.plot(Data['CadenceTrMin'][FrameInit:FrameInit+800]*10,'--')
     plt.legend(['Force Totale Absolue (N)','Cadence*10 (tr/min)'])
-    plt.suptitle('RECUPERATION TEMPS BAS DE BUTTE')
-    plt.title('Cliquer sur le pic de force après la reprise de pédalage :')
-    plt.grid()
+    plt.suptitle('END MOUND DETECTION')
+    plt.title('Clic on the first force peak after Cadence decrease :')
     plt.xlabel('Frame')
     FrameEncaissement = plt.ginput(n=1)
     FrameEncaissement = int(FrameEncaissement[0][0])
     FrameEncaissement = np.argmax(Data['ForceTotaleAbsolue'][FrameEncaissement-10:FrameEncaissement+10])+(FrameEncaissement-10)
-    plt.plot(FrameEncaissement,Data['ForceTotaleAbsolue'][FrameEncaissement],'x')
     TempsBasButte = (FrameEncaissement-FrameInit)*0.005
-    # plt.close()
+    
+    #Verification
+    if VerificationEndStartHill in ['O','o','OUI','Oui','oui','Y','y','YES','Yes','yes'] :
+        plt.plot(FrameEncaissement,Data['ForceTotaleAbsolue'][FrameEncaissement],'x')
+        plt.grid()
+    else :
+        plt.close()
     
     return TempsBasButte
 
-def FirstJump(Data,FrameInit):
+def FirstJump(Data,FrameInit,VerificationFirstJump="No"):
+    """
+    USES
     
+    * Find take-off instant of the first bump.
+    
+    PARAMETERS 
+    
+    * Data : All dataframe of the try, containing at least Forces and Cadence (NxM)
+    
+    * FrameInit :  Start frame of the try. (int)
+    
+    * VerificationFirstJump : Yes/No to verify the instant that has been detected for the first jump. (str)
+    
+    """
+    
+    # Plot
     plt.figure()
     plt.plot(Data['ForceTotaleAbsolue'][FrameInit:FrameInit+800],label='Force Totale Absolue (N)')  
     plt.plot(Data['CadenceTrMin'][FrameInit:FrameInit+800]*10,'--',label='Cadence x10 (tr/min)')  
     plt.legend()
-    plt.suptitle('PHASE AERIENNE 1ere BOSSE')
-    plt.title("Cliquer au pic de force lié au décollage, puis au min qui suit :")
+    plt.suptitle('1st BUMP TAKE-OFF DETECTION')
+    plt.title("Clic on the 2nd force peak after Cadence decrease & on minimum after this peak :")
     plt.xlabel('Frame')
     
-    #Définir les limites d'étude pour trouver l'instant de décollage
-    DebutDecollage = plt.ginput(n=1)
-    DebutDecollage = int(DebutDecollage[0][0])
-    DebutDecollage = np.argmax(Data['ForceTotaleAbsolue'][DebutDecollage-10:DebutDecollage+10])+(DebutDecollage-10)
-    plt.plot(DebutDecollage,Data['ForceTotaleAbsolue'][DebutDecollage],'x')
-    FinDecollage = plt.ginput(n=1)
-    FinDecollage = int(FinDecollage[0][0])
-    FinDecollage = np.argmin(Data['ForceTotaleAbsolue'][FinDecollage-10:FinDecollage+10])+(FinDecollage-10)
-    plt.plot(FinDecollage,Data['ForceTotaleAbsolue'][FinDecollage],'x')
-    plt.title("Résultats :")
+    # User input, allows to define analysis area
+    StartTakeOff = plt.ginput(n=1)
+    StartTakeOff = int(StartTakeOff[0][0])
+    StartTakeOff = np.argmax(Data['ForceTotaleAbsolue'][StartTakeOff-10:StartTakeOff+10])+(StartTakeOff-10)
+    plt.plot(StartTakeOff,Data['ForceTotaleAbsolue'][StartTakeOff],'x')
+    EndTakeOff = plt.ginput(n=1)
+    EndTakeOff = int(EndTakeOff[0][0])
+    EndTakeOff = np.argmin(Data['ForceTotaleAbsolue'][EndTakeOff-10:EndTakeOff+10])+(EndTakeOff-10)
     
-    #Trouver la pente max de la force (=dérivée min) => considéré comme l'instant de décollage le plus répétable
-    DeriveeForceTotaleAbsolue = [0 for i in range(DebutDecollage,FinDecollage)]
+    
+    #Find max Force slope (=dérivée min) => considered as most repeatable take-off instant
+    DeriveeForceTotaleAbsolue = [0 for i in range(StartTakeOff,EndTakeOff)]
     a = 1
-    for i in range(DebutDecollage+1,FinDecollage):
+    for i in range(StartTakeOff+1,EndTakeOff):
         DeriveeForceTotaleAbsolue[a] = (Data['ForceTotaleAbsolue'][i+1]-Data['ForceTotaleAbsolue'][i-1])/(0.005*2)
         a = a+1
-    InstantDecollage = np.argmin(DeriveeForceTotaleAbsolue)+DebutDecollage
-    TempsDecollage = (InstantDecollage-FrameInit)*0.005
-    plt.plot(InstantDecollage,Data['ForceTotaleAbsolue'][InstantDecollage],'x')
-    # plt.close()
+    FrameTakeOff = np.argmin(DeriveeForceTotaleAbsolue)+StartTakeOff
+    TimeTakeOff = (FrameTakeOff-FrameInit)*0.005
     
-    #Vitesse de décollage calculée comme la moyenne de la vitesse lors de la chute de la force
-    VitesseDecollage = np.mean(Data['VitesseTopTour'][InstantDecollage-5:InstantDecollage+5])
-    StdVitesseDecollage =  np.std(Data['VitesseTopTour'][InstantDecollage-5:InstantDecollage+5])
+    # Speed calculated as speed mean 25 millisecond before and after detected instant
+    TakeOffSpeed = np.mean(Data['VitesseTopTour'][FrameTakeOff-5:FrameTakeOff+5])
+    StdTakeOffSpeed =  np.std(Data['VitesseTopTour'][FrameTakeOff-5:FrameTakeOff+5])
     
-    return TempsDecollage, VitesseDecollage, StdVitesseDecollage
+    
+    # Verification
+    if VerificationFirstJump in ['O','o','OUI','Oui','oui','Y','y','YES','Yes','yes'] :
+        plt.plot(EndTakeOff,Data['ForceTotaleAbsolue'][EndTakeOff],'x')
+        plt.plot(FrameTakeOff,Data['ForceTotaleAbsolue'][FrameTakeOff],'x')
+        plt.title("Results :")
+        plt.grid()
+    else :
+        plt.close()
+    
+    return TimeTakeOff, TakeOffSpeed, StdTakeOffSpeed
         
