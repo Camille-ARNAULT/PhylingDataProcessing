@@ -118,10 +118,11 @@ for zone in range(0,NbZones):
 #%% ANALYSE GRAPHIQUE
 
 # User input :
-DataToPlot = "Roulis"
+DataToPlot = "TimestampGPS"
 Unit = "N"
 TypeAffichage = "Instant" # "Instant" ou "Cumulative"
 ZonesEtudiees = range(0,NbZones)
+Color = []
 
 
 ''' Select DataToPlot and its unit in this list :
